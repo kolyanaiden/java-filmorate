@@ -1,118 +1,142 @@
 package ru.yandex.practicum.filmorate.model;
 
-import org.junit.jupiter.api.BeforeEach;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.controller.UserController;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@WebMvcTest(UserController.class)
 public class UserValidationTest {
-    private UserController userController;
 
-    @BeforeEach
-    void setUp() {
-        userController = new UserController();
-    }
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
-    void shouldNotAddUserWithEmptyEmail() {
+    void shouldNotAddUserWithEmptyEmail() throws Exception {
         User user = new User();
         user.setEmail("");
         user.setLogin("login");
         user.setName("Name");
         user.setBirthday(LocalDate.of(1990, 1, 1));
 
-        assertThrows(ValidationException.class, () -> userController.createUser(user));
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void shouldNotAddUserWithEmailWithoutAt() {
+    void shouldNotAddUserWithEmailWithoutAt() throws Exception {
         User user = new User();
         user.setEmail("testemail.com");
         user.setLogin("login");
         user.setName("Name");
         user.setBirthday(LocalDate.of(1990, 1, 1));
 
-        assertThrows(ValidationException.class, () -> userController.createUser(user));
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void shouldNotAddUserWithEmptyLogin() {
+    void shouldNotAddUserWithEmptyLogin() throws Exception {
         User user = new User();
         user.setEmail("test@email.com");
         user.setLogin("");
         user.setName("Name");
         user.setBirthday(LocalDate.of(1990, 1, 1));
 
-        assertThrows(ValidationException.class, () -> userController.createUser(user));
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void shouldNotAddUserWithLoginContainingSpaces() {
+    void shouldNotAddUserWithLoginContainingSpaces() throws Exception {
         User user = new User();
         user.setEmail("test@email.com");
         user.setLogin("user login");
         user.setName("Name");
         user.setBirthday(LocalDate.of(1990, 1, 1));
 
-        assertThrows(ValidationException.class, () -> userController.createUser(user));
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void shouldUseLoginAsNameWhenNameIsEmpty() {
+    void shouldUseLoginAsNameWhenNameIsEmpty() throws Exception {
         User user = new User();
         user.setEmail("test@email.com");
         user.setLogin("userlogin");
         user.setName("");
         user.setBirthday(LocalDate.of(1990, 1, 1));
 
-        User createdUser = userController.createUser(user);
-
-        assertEquals("userlogin", createdUser.getName());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("userlogin"));
     }
 
     @Test
-    void shouldNotAddUserWithBirthdayInFuture() {
+    void shouldNotAddUserWithBirthdayInFuture() throws Exception {
         User user = new User();
         user.setEmail("test@email.com");
         user.setLogin("login");
         user.setName("Name");
-        // Используем дату на один день вперед от текущей
         user.setBirthday(LocalDate.now().plusDays(1));
 
-        assertThrows(ValidationException.class, () -> userController.createUser(user));
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void shouldAddUserWithBirthdayToday() {
+    void shouldAddUserWithBirthdayToday() throws Exception {
         User user = new User();
         user.setEmail("test@email.com");
         user.setLogin("userlogin");
         user.setName("User Name");
         user.setBirthday(LocalDate.now());
 
-        User createdUser = userController.createUser(user);
-
-        assertNotNull(createdUser.getId());
-        assertEquals(LocalDate.now(), createdUser.getBirthday());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.birthday").value(LocalDate.now().toString()));
     }
 
     @Test
-    void shouldAddValidUser() {
+    void shouldAddValidUser() throws Exception {
         User user = new User();
         user.setEmail("test@email.com");
         user.setLogin("userlogin");
         user.setName("User Name");
         user.setBirthday(LocalDate.of(1990, 1, 1));
 
-        User createdUser = userController.createUser(user);
-
-        assertNotNull(createdUser.getId());
-        assertEquals("test@email.com", createdUser.getEmail());
-        assertEquals("userlogin", createdUser.getLogin());
-        assertEquals("User Name", createdUser.getName());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("test@email.com"))
+                .andExpect(jsonPath("$.login").value("userlogin"))
+                .andExpect(jsonPath("$.name").value("User Name"));
     }
 }
