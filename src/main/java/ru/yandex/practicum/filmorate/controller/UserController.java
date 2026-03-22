@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -20,9 +21,11 @@ public class UserController {
     private int currentId = 1;
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
+    public User createUser(@Valid @RequestBody User user) {
         log.info("Получен запрос на создание пользователя: {}", user);
-        validateUser(user);
+
+        // Ручная валидация для тестов
+        validateUserManually(user);
 
         // Если имя пустое, используем логин
         if (user.getName() == null || user.getName().isBlank()) {
@@ -38,7 +41,7 @@ public class UserController {
     }
 
     @PutMapping
-    public User updateUser(@RequestBody User user) {
+    public User updateUser(@Valid @RequestBody User user) {
         log.info("Получен запрос на обновление пользователя: {}", user);
 
         if (user.getId() == null) {
@@ -51,7 +54,8 @@ public class UserController {
             throw new NotFoundException("Пользователь с id " + user.getId() + " не найден");
         }
 
-        validateUser(user);
+        // Ручная валидация для тестов
+        validateUserManually(user);
 
         // Если имя пустое, используем логин
         if (user.getName() == null || user.getName().isBlank()) {
@@ -71,7 +75,8 @@ public class UserController {
         return new ArrayList<>(users.values());
     }
 
-    private void validateUser(User user) {
+    private void validateUserManually(User user) {
+        // Проверка email
         if (user.getEmail() == null || user.getEmail().isBlank()) {
             log.error("Ошибка валидации: электронная почта не может быть пустой");
             throw new ValidationException("Электронная почта не может быть пустой");
@@ -82,6 +87,7 @@ public class UserController {
             throw new ValidationException("Электронная почта должна содержать символ @");
         }
 
+        // Проверка логина
         if (user.getLogin() == null || user.getLogin().isBlank()) {
             log.error("Ошибка валидации: логин не может быть пустым");
             throw new ValidationException("Логин не может быть пустым");
@@ -92,6 +98,7 @@ public class UserController {
             throw new ValidationException("Логин не может содержать пробелы");
         }
 
+        // Проверка даты рождения
         if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
             log.error("Ошибка валидации: дата рождения {} в будущем", user.getBirthday());
             throw new ValidationException("Дата рождения не может быть в будущем");

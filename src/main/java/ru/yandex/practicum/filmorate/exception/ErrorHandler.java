@@ -2,11 +2,13 @@ package ru.yandex.practicum.filmorate.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -17,6 +19,16 @@ public class ErrorHandler {
     public Map<String, String> handleValidationException(ValidationException e) {
         log.error("Ошибка валидации: {}", e.getMessage());
         return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        String errorMessage = e.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        log.error("Ошибка валидации аннотаций: {}", errorMessage);
+        return Map.of("error", errorMessage);
     }
 
     @ExceptionHandler(NotFoundException.class)
