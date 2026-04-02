@@ -38,6 +38,13 @@ public class ErrorHandler {
         return Map.of("error", e.getMessage());
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.error("Некорректный аргумент: {}", e.getMessage());
+        return Map.of("error", e.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleException(Exception e) {
