@@ -5,7 +5,8 @@ Template repository for Filmorate project.
 
 ## ER-диаграмма базы данных
 
-![Схема базы данных Filmorate](./filmorate_er_diagram.png)
+![Схема базы данных Filmorate](filmorate_er_diagram_1.png)
+
 
 ## Описание структуры
 База данных спроектирована в соответствии с **третьей нормальной формой (3NF)**.

@@ -8,6 +8,7 @@ Table users {
   created_at timestamp [default: `now()`]
 }
 
+
 // Справочник рейтингов MPA
 Table mpa_ratings {
   rating_id integer [pk]
