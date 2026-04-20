@@ -1,0 +1,66 @@
+// Таблица пользователей
+Table users {
+  user_id integer [pk, increment]
+  email varchar(255) [not null, unique]
+  login varchar(100) [not null, unique]
+  name varchar(255)
+  birthday date [not null]
+  created_at timestamp [default: `now()`]
+}
+
+// Справочник рейтингов MPA
+Table mpa_ratings {
+  rating_id integer [pk]
+  code varchar(10) [not null, unique] // G, PG, PG-13, R, NC-17
+  description varchar(255)
+}
+
+// Таблица фильмов
+Table films {
+  film_id integer [pk, increment]
+  name varchar(255) [not null]
+  description text
+  release_date date [not null]
+  duration integer [not null]
+  mpa_rating_id integer [ref: > mpa_ratings.rating_id, not null] // Внешний ключ на рейтинг
+  created_at timestamp [default: `now()`]
+}
+
+// Справочник жанров
+Table genres {
+  genre_id integer [pk]
+  name varchar(100) [not null, unique]
+}
+
+// Связь "Многие ко многим" между фильмами и жанрами
+Table film_genres {
+  film_id integer [ref: > films.film_id, not null]
+  genre_id integer [ref: > genres.genre_id, not null]
+  
+  Indexes {
+    (film_id, genre_id) [pk] // Составной первичный ключ
+  }
+}
+
+// Лайки фильмов
+Table film_likes {
+  film_id integer [ref: > films.film_id, not null]
+  user_id integer [ref: > users.user_id, not null]
+  liked_at timestamp [default: `now()`]
+  
+  Indexes {
+    (film_id, user_id) [pk]
+  }
+}
+
+// Статус дружбы (с учетом заявок)
+Table friendship {
+  user_id integer [ref: > users.user_id, not null] // Кто отправил заявку
+  friend_id integer [ref: > users.user_id, not null] // Кому отправили
+  status varchar(20) [not null] // 'PENDING' или 'CONFIRMED'
+  created_at timestamp [default: `now()`]
+  
+  Indexes {
+    (user_id, friend_id) [pk]
+  }
+}
