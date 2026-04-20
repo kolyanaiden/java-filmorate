@@ -4,6 +4,7 @@ Template repository for Filmorate project.
 # Filmorate - Database Design
 
 ## ER-диаграмма базы данных
+
 ![Схема базы данных Filmorate](./filmorate_er_diagram.png)
 
 ## Описание структуры
