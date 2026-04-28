@@ -56,7 +56,7 @@ public class UserController {
         log.info("Пользователь успешно обновлен с id: {}", updatedUser.getId());
         return updatedUser;
     }
-
+//
     @GetMapping
     public List<User> getAllUsers() {
         log.info("Получен запрос на получение всех пользователей");
