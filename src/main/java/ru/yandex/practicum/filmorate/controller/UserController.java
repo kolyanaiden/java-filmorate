@@ -1,25 +1,23 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
 @RequestMapping("/users")
-@Validated
+@RequiredArgsConstructor
 public class UserController {
-    private final Map<Integer, User> users = new HashMap<>();
-    private int currentId = 1;
+
+    private final UserStorage userStorage;
 
     @PostMapping
     public User createUser(@Valid @RequestBody User user) {
@@ -31,11 +29,9 @@ public class UserController {
             log.info("Имя пользователя не указано, используем логин: {}", user.getLogin());
         }
 
-        user.setId(currentId++);
-        users.put(user.getId(), user);
-
-        log.info("Пользователь успешно создан с id: {}", user.getId());
-        return user;
+        User savedUser = userStorage.save(user);
+        log.info("Пользователь успешно создан с id: {}", savedUser.getId());
+        return savedUser;
     }
 
     @PutMapping
@@ -47,10 +43,8 @@ public class UserController {
             throw new ValidationException("Id пользователя должен быть указан");
         }
 
-        if (!users.containsKey(user.getId())) {
-            log.error("Попытка обновления несуществующего пользователя с id: {}", user.getId());
-            throw new NotFoundException("Пользователь с id " + user.getId() + " не найден");
-        }
+        userStorage.getById(user.getId())
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + user.getId() + " не найден"));
 
         // Если имя пустое, используем логин
         if (user.getName() == null || user.getName().isBlank()) {
@@ -58,15 +52,45 @@ public class UserController {
             log.info("Имя пользователя не указано, используем логин: {}", user.getLogin());
         }
 
-        users.put(user.getId(), user);
-
-        log.info("Пользователь успешно обновлен с id: {}", user.getId());
-        return user;
+        User updatedUser = userStorage.update(user);
+        log.info("Пользователь успешно обновлен с id: {}", updatedUser.getId());
+        return updatedUser;
     }
 
     @GetMapping
     public List<User> getAllUsers() {
         log.info("Получен запрос на получение всех пользователей");
-        return new ArrayList<>(users.values());
+        return userStorage.getAll();
+    }
+
+    @GetMapping("/{id}")
+    public User getUser(@PathVariable int id) {
+        log.info("Получен запрос на получение пользователя с id: {}", id);
+        return userStorage.getById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addFriend(@PathVariable int id, @PathVariable int friendId) {
+        log.info("Пользователь {} добавляет в друзья пользователя {}", id, friendId);
+        userStorage.addFriend(id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void removeFriend(@PathVariable int id, @PathVariable int friendId) {
+        log.info("Пользователь {} удаляет из друзей пользователя {}", id, friendId);
+        userStorage.removeFriend(id, friendId);
+    }
+
+    @GetMapping("/{id}/friends")
+    public List<User> getFriends(@PathVariable int id) {
+        log.info("Получен запрос на получение друзей пользователя {}", id);
+        return userStorage.getFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
+        log.info("Получен запрос на получение общих друзей пользователей {} и {}", id, otherId);
+        return userStorage.getCommonFriends(id, otherId);
     }
 }

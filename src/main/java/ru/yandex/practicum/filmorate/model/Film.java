@@ -5,6 +5,8 @@ import lombok.Data;
 import ru.yandex.practicum.filmorate.annotation.ValidReleaseDate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class Film {
@@ -17,9 +19,15 @@ public class Film {
     private String description;
 
     @NotNull(message = "Дата релиза не может быть null")
-    @ValidReleaseDate(message = "Дата релиза не может быть в будущем")
+    @ValidReleaseDate(message = "Дата релиза не может быть раньше 28 декабря 1895 года")
     private LocalDate releaseDate;
 
     @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private Integer duration;
+
+    private MpaRating mpa;
+
+    private Set<Genre> genres = new HashSet<>();
+
+    private Set<Integer> likes = new HashSet<>();
 }
