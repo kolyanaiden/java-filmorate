@@ -41,12 +41,14 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(keyHolder.getKey().intValue());
 
-        // Сохраняем жанры
+        // Сохраняем жанры через batchUpdate
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+            List<Object[]> batchArgs = new ArrayList<>();
             for (Genre genre : film.getGenres()) {
-                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
+                batchArgs.add(new Object[]{film.getId(), genre.getId()});
             }
+            jdbcTemplate.batchUpdate(genreSql, batchArgs);
         }
 
         return getById(film.getId()).orElse(film);
@@ -69,9 +71,11 @@ public class FilmDbStorage implements FilmStorage {
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+            List<Object[]> batchArgs = new ArrayList<>();
             for (Genre genre : film.getGenres()) {
-                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
+                batchArgs.add(new Object[]{film.getId(), genre.getId()});
             }
+            jdbcTemplate.batchUpdate(genreSql, batchArgs);
         }
 
         return getById(film.getId()).orElse(film);
