@@ -14,7 +14,6 @@ import ru.yandex.practicum.filmorate.storage.mappers.GenreRowMapper;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -148,9 +147,9 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT g.* FROM genres g " +
                 "JOIN film_genres fg ON g.genre_id = fg.genre_id " +
                 "WHERE fg.film_id = ? " +
-                "ORDER BY g.genre_id";
+                "ORDER BY fg.film_id, fg.genre_id"; // Оставляем порядок как в запросе
         List<Genre> genres = jdbcTemplate.query(sql, genreRowMapper, filmId);
-        return new HashSet<>(genres);
+        return new LinkedHashSet<>(genres); // Используем LinkedHashSet для сохранения порядка
     }
 
     private Set<Integer> getFilmLikes(int filmId) {
