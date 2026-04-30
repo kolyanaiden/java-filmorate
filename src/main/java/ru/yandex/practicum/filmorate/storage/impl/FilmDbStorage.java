@@ -14,7 +14,6 @@ import ru.yandex.practicum.filmorate.storage.mappers.GenreRowMapper;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -42,12 +41,14 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(keyHolder.getKey().intValue());
 
-        // Сохраняем жанры
+        // Сохраняем жанры через batchUpdate
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+            List<Object[]> batchArgs = new ArrayList<>();
             for (Genre genre : film.getGenres()) {
-                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
+                batchArgs.add(new Object[]{film.getId(), genre.getId()});
             }
+            jdbcTemplate.batchUpdate(genreSql, batchArgs);
         }
 
         return getById(film.getId()).orElse(film);
@@ -70,9 +71,11 @@ public class FilmDbStorage implements FilmStorage {
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+            List<Object[]> batchArgs = new ArrayList<>();
             for (Genre genre : film.getGenres()) {
-                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
+                batchArgs.add(new Object[]{film.getId(), genre.getId()});
             }
+            jdbcTemplate.batchUpdate(genreSql, batchArgs);
         }
 
         return getById(film.getId()).orElse(film);
@@ -148,9 +151,9 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT g.* FROM genres g " +
                 "JOIN film_genres fg ON g.genre_id = fg.genre_id " +
                 "WHERE fg.film_id = ? " +
-                "ORDER BY g.genre_id";
+                "ORDER BY fg.film_id, fg.genre_id"; // Оставляем порядок как в запросе
         List<Genre> genres = jdbcTemplate.query(sql, genreRowMapper, filmId);
-        return new HashSet<>(genres);
+        return new LinkedHashSet<>(genres); // Используем LinkedHashSet для сохранения порядка
     }
 
     private Set<Integer> getFilmLikes(int filmId) {
