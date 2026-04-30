@@ -56,7 +56,7 @@ public class UserController {
         log.info("Пользователь успешно обновлен с id: {}", updatedUser.getId());
         return updatedUser;
     }
-
+//
     @GetMapping
     public List<User> getAllUsers() {
         log.info("Получен запрос на получение всех пользователей");
@@ -73,50 +73,24 @@ public class UserController {
     @PutMapping("/{id}/friends/{friendId}")
     public void addFriend(@PathVariable int id, @PathVariable int friendId) {
         log.info("Пользователь {} добавляет в друзья пользователя {}", id, friendId);
-
-        // Проверяем существование обоих пользователей
-        userStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
-        userStorage.getById(friendId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + friendId + " не найден"));
-
         userStorage.addFriend(id, friendId);
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
     public void removeFriend(@PathVariable int id, @PathVariable int friendId) {
         log.info("Пользователь {} удаляет из друзей пользователя {}", id, friendId);
-
-        // Проверяем существование обоих пользователей
-        userStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
-        userStorage.getById(friendId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + friendId + " не найден"));
-
         userStorage.removeFriend(id, friendId);
     }
 
     @GetMapping("/{id}/friends")
     public List<User> getFriends(@PathVariable int id) {
         log.info("Получен запрос на получение друзей пользователя {}", id);
-
-        // Проверяем существование пользователя
-        userStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
-
         return userStorage.getFriends(id);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
     public List<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
         log.info("Получен запрос на получение общих друзей пользователей {} и {}", id, otherId);
-
-        // Проверяем существование обоих пользователей
-        userStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
-        userStorage.getById(otherId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + otherId + " не найден"));
-
         return userStorage.getCommonFriends(id, otherId);
     }
 }

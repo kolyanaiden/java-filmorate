@@ -42,12 +42,14 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User update(User user) {
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE user_id = ?";
+
         jdbcTemplate.update(sql,
                 user.getEmail(),
                 user.getLogin(),
                 user.getName(),
                 Date.valueOf(user.getBirthday()),
                 user.getId());
+
         return getById(user.getId()).orElse(user);
     }
 
@@ -55,51 +57,72 @@ public class UserDbStorage implements UserStorage {
     public Optional<User> getById(int id) {
         String sql = "SELECT * FROM users WHERE user_id = ?";
         List<User> users = jdbcTemplate.query(sql, userRowMapper, id);
-        return users.stream().findFirst();
+
+        if (users.isEmpty()) {
+            return Optional.empty();
+        }
+
+        User user = users.get(0);
+        user.setFriends(getUserFriends(user.getId()));
+
+        return Optional.of(user);
     }
 
     @Override
     public List<User> getAll() {
         String sql = "SELECT * FROM users";
-        return jdbcTemplate.query(sql, userRowMapper);
+        List<User> users = jdbcTemplate.query(sql, userRowMapper);
+
+        for (User user : users) {
+            user.setFriends(getUserFriends(user.getId()));
+        }
+
+        return users;
     }
 
     @Override
     public void addFriend(int userId, int friendId) {
-        // Проверяем, существует ли уже запись
         String checkSql = "SELECT COUNT(*) FROM friendship WHERE user_id = ? AND friend_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
 
-        if (count == null || count == 0) {
-            // Создаем новую запись о дружбе (одностороннюю)
-            String insertSql = "INSERT INTO friendship (user_id, friend_id, status) VALUES (?, ?, 'CONFIRMED')";
+        if (count != null && count > 0) {
+            // Если запись существует, обновляем статус на CONFIRMED
+            String updateSql = "UPDATE friendship SET status = 'CONFIRMED' WHERE user_id = ? AND friend_id = ?";
+            jdbcTemplate.update(updateSql, userId, friendId);
+        } else {
+            // Иначе создаем новую запись со статусом PENDING
+            String insertSql = "INSERT INTO friendship (user_id, friend_id, status) VALUES (?, ?, 'PENDING')";
             jdbcTemplate.update(insertSql, userId, friendId);
         }
     }
 
     @Override
     public void removeFriend(int userId, int friendId) {
-        // Удаляем только свою запись о дружбе
         String sql = "DELETE FROM friendship WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
     public List<User> getFriends(int userId) {
-        // Получаем всех, кого пользователь добавил в друзья
         String sql = "SELECT u.* FROM users u " +
                 "JOIN friendship f ON u.user_id = f.friend_id " +
-                "WHERE f.user_id = ?";
+                "WHERE f.user_id = ? AND f.status = 'CONFIRMED'";
         return jdbcTemplate.query(sql, userRowMapper, userId);
     }
 
     @Override
     public List<User> getCommonFriends(int userId, int friendId) {
-        // Находим пересечение друзей двух пользователей
         String sql = "SELECT u.* FROM users u " +
                 "JOIN friendship f1 ON u.user_id = f1.friend_id " +
                 "JOIN friendship f2 ON u.user_id = f2.friend_id " +
-                "WHERE f1.user_id = ? AND f2.user_id = ?";
+                "WHERE f1.user_id = ? AND f2.user_id = ? " +
+                "AND f1.status = 'CONFIRMED' AND f2.status = 'CONFIRMED'";
         return jdbcTemplate.query(sql, userRowMapper, userId, friendId);
+    }
+
+    private Set<Integer> getUserFriends(int userId) {
+        String sql = "SELECT friend_id FROM friendship WHERE user_id = ? AND status = 'CONFIRMED'";
+        List<Integer> friends = jdbcTemplate.queryForList(sql, Integer.class, userId);
+        return new HashSet<>(friends);
     }
 }
